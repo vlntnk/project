@@ -1,0 +1,97 @@
+from pydantic import (BaseModel, EmailStr, field_validator,
+                      ConfigDict, constr)
+from fastapi import HTTPException
+from typing import Optional
+import re
+from uuid import UUID
+
+LETTER_MATCH_PATTERN = re.compile(r'^[A-ZА-Я\-]+$', re.IGNORECASE)
+
+
+class CreateUser(BaseModel):
+    name: str
+    surname: str
+    email: EmailStr
+    password: str
+
+    @field_validator('name')
+    def validate_name(cls, value):
+        if not LETTER_MATCH_PATTERN.match(value):
+            raise HTTPException(
+                status_code=422, detail='Name must contain only letters'
+            )
+        return value
+
+    @field_validator('surname')
+    def validate_surname(cls, value):
+        if not LETTER_MATCH_PATTERN.match(value):
+            raise HTTPException(
+                status_code=422, detail='Surname must contain only letters'
+            )
+        return value
+
+
+class TunedModel(BaseModel):
+    class Config:
+        from_attributes = True
+
+
+class CreateUser_Response(TunedModel):
+    name: str
+    surname: str
+    email: EmailStr
+    token: str
+    type: str = 'Bearer'
+
+
+class AuthUser_Request(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    email: EmailStr
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "Bearer"
+
+
+class ShowUser(BaseModel):
+    user_id: str | None
+    name: str
+    surname: str
+    email: EmailStr
+
+
+class DeleteUser_Request(BaseModel):
+    name: str
+    surname: str
+    email: EmailStr
+    password: str
+
+
+class UpdateUser_Request(BaseModel):
+    name: Optional[constr(min_length=1)]
+    surname: Optional[constr(min_length=1)]
+    email: EmailStr | None
+
+    @field_validator("name")
+    def validate_name(cls, value):
+        if not LETTER_MATCH_PATTERN.match(value):
+            raise HTTPException(
+                status_code=422, detail="Name should contains only letters"
+            )
+        return value
+
+    @field_validator("surname")
+    def validate_surname(cls, value):
+        if not LETTER_MATCH_PATTERN.match(value):
+            raise HTTPException(
+                status_code=422, detail="Surname should contains only letters"
+            )
+        return value
+
+
+class Cookie_model(BaseModel):
+    session_id: UUID
+    jwt_token: str
