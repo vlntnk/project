@@ -40,6 +40,7 @@ class UserDAL:
             query = delete(Users).where(Users.user_id == user_id)
             try:
                 await self.db_session.execute(query)
+                await self.db_session.flush()
             except Exception:
                 return None
             else:
@@ -54,7 +55,9 @@ class UserDAL:
         )
         try:
             res = await self.db_session.execute(query)
+            await self.db_session.flush()
         except Exception as e:
+            print(f"{e}")
             raise HTTPException(status_code=406, detail=e)
         update_user_id_row = res.fetchone()
         if update_user_id_row is not None:
@@ -76,7 +79,7 @@ class UserDAL:
         print(got_id, 'dal')
         try:
             cookie_record = await self.db_session.execute(query)
-            print(cookie_record, "dal")
+            print(cookie_record, "dal1")
             return cookie_record.fetchone()[0]
         except Exception as e:
             print(f"{e}")

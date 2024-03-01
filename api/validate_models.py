@@ -64,9 +64,6 @@ class ShowUser(BaseModel):
 
 
 class DeleteUser_Request(BaseModel):
-    name: str
-    surname: str
-    email: EmailStr
     password: str
 
 

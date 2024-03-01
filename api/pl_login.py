@@ -20,6 +20,25 @@ login_router = APIRouter()
 http_bearer = HTTPBearer()
 
 
+async def get_cookie_id(request: Request):
+    return request.cookies.get(COOKIE_ID)
+
+
+async def get_data_from_cookie(cookie_id: str = Depends(get_cookie_id),
+                       session: AsyncSession = Depends(get_db)):
+    print(cookie_id, 'cookie_id')
+    if cookie_id is not None:
+        # print(cookie_id, "func")
+        dal_object = UserDAL(session)
+        record = await dal_object.get_from_cookie(cookie_id)
+        if record is not None:
+            return Cookie_model(
+                session_id=record.session_id,
+                jwt_token=record.jwt_token
+            )
+    raise HTTPException(status_code=400, detail="error")
+
+
 async def _register_user(body: CreateUser, session) -> Optional[Users]:
     async with session.begin():
         user_dal = UserDAL(session)
@@ -76,37 +95,42 @@ async def _require_token(
     raise HTTPException(status_code=401, detail='Unauthorized')
 
 
-async def _delete_user(session, request_user: DeleteUser_Request):
-    user_from_db = await _get_user_by_email(request_user.email, session)
-    if user_from_db is None:
-        raise HTTPException(status_code=404, detail='User not found')
-    # byte_password = user_from_db.hashed_password.encode()
-    # text_password = str(request_user.password)
-    if Hasher.verify_password(request_user.password, user_from_db.hashed_password.encode()):
-        async with session.begin():
-            user_dal = UserDAL(session)
-            db_response = await user_dal.delete_user_dal(user_from_db.user_id)
-            if db_response:
-                return db_response
-            raise HTTPException(status_code=502, detail='Database error')
-    raise HTTPException(status_code=403, detail='Incorrect password')
+async def _delete_user(session, request_user, cookie_id):
+    if cookie_id is not None:
+        cookie_data = await get_data_from_cookie(cookie_id, session)
+        email = generate_jwt.decode_jwt(cookie_data.jwt_token)
+        user_from_db = await _get_user_by_email(email['email'], session)
+        if user_from_db is None:
+            raise HTTPException(status_code=404, detail='User not found')
+        if Hasher.verify_password(request_user.password, user_from_db.hashed_password.encode()):
+            async with session.begin():
+                user_dal = UserDAL(session)
+                db_response = await user_dal.delete_user_dal(user_from_db.user_id)
+                if db_response:
+                    return db_response
+                raise HTTPException(status_code=502, detail='Database error')
+        raise HTTPException(status_code=403, detail='Incorrect password')
+    raise HTTPException(status_code=401, detail='Unauthorized')
 
 
-async def _update_user(session, body: UpdateUser_Request, user: ShowUser):
+async def _update_user(session, body: UpdateUser_Request, cookie_id):
     async with session.begin():
-        user_dal = UserDAL(session)
-        try:
-            updated_user = await user_dal.update_user_dal(user_id=user.user_id,
-                                                        **body.dict(exclude_none=True))
-        except Exception as e:
-            raise HTTPException(status_code=406, detail=e)
-        if updated_user is not None:
-            return updated_user
+        if cookie_id is not None:
+            cookie_data = await get_data_from_cookie(cookie_id, session)
+            user_id = generate_jwt.decode_jwt(cookie_data.jwt_token)['sub']
+            user_dal = UserDAL(session)
+            try:
+                updated_user = await user_dal.update_user_dal(user_id=user_id,
+                                                            **body.dict(exclude_none=True))
+            except Exception as e:
+                raise HTTPException(status_code=406, detail=e)
+            if updated_user is not None:
+                return updated_user
 
-session_id = str(uuid.uuid4().hex)
+
 async def _cookie_auth(session, body: AuthUser_Request):
     user_token = await _auth_user(body, session)
-    global session_id
+    session_id = str(uuid.uuid4().hex)
     print(session_id, "uuid")
     async with session.begin():
         cookie_dal = UserDAL(session)
@@ -114,20 +138,19 @@ async def _cookie_auth(session, body: AuthUser_Request):
     return cookie
 
 
-async def get_data_from_cookie(cookie_id: str = Cookie(None),
-                               session: AsyncSession = Depends(get_db)):
+async def get_data_from_cookie(cookie_id: str = Depends(get_cookie_id),
+                       session: AsyncSession = Depends(get_db)):
+    print(cookie_id, 'cookie_id')
     if cookie_id is not None:
-        print(Cookie())
-        print(cookie_id, "func")
+        # print(cookie_id, "func")
         dal_object = UserDAL(session)
         record = await dal_object.get_from_cookie(cookie_id)
         if record is not None:
-            return record
+            return Cookie_model(
+                session_id=record.session_id,
+                jwt_token=record.jwt_token
+            )
     raise HTTPException(status_code=400, detail="error")
-
-
-async def get_cookie_id(request: Request):
-    return request.cookies.get(COOKIE_ID)
 
 
 @login_router.post('/registration', response_model=CreateUser_Response)
@@ -173,9 +196,11 @@ async def some_secret_page(user: ShowUser = Depends(_require_token)):
 
 
 @login_router.delete('/delete_user')
-async def delete_user(user: DeleteUser_Request, session: AsyncSession = Depends(get_db)):
+async def delete_user(user: DeleteUser_Request,
+                      session: AsyncSession = Depends(get_db),
+                      cookie_id=Depends(get_cookie_id)):
     try:
-        await _delete_user(session, request_user=user)
+        await _delete_user(session, cookie_id=cookie_id, request_user=user)
     except HTTPException as error:
         return HTTPException(status_code=400, detail=error)
     else:
@@ -184,10 +209,12 @@ async def delete_user(user: DeleteUser_Request, session: AsyncSession = Depends(
 
 @login_router.put('/update_user')
 async def update_user(credentials: UpdateUser_Request,
-                      user: ShowUser = Depends(_require_token),
-                      session: AsyncSession = Depends(get_db)):
+#                       user: ShowUser = Depends(_require_token),
+                      session: AsyncSession = Depends(get_db),
+                      cookie_id=Depends(get_cookie_id)):
     try:
-        updated_user = await _update_user(session, body=credentials, user=user)
+        updated_user = await _update_user(session, body=credentials,
+                                          cookie_id=cookie_id)
     except Exception as e:
         return HTTPException(status_code=406, detail=e)
     return updated_user
@@ -206,11 +233,10 @@ async def login_by_cookie(body: AuthUser_Request,
 
 @login_router.get('/check_cookie')
 async def check_cookie(cookie_id: str = Depends(get_cookie_id),
-                               session: AsyncSession = Depends(get_db)):
+                       session: AsyncSession = Depends(get_db)):
     print(cookie_id, 'cookie_id')
     if cookie_id is not None:
-        print(Cookie())
-        print(cookie_id, "func")
+        # print(cookie_id, "func")
         dal_object = UserDAL(session)
         record = await dal_object.get_from_cookie(cookie_id)
         if record is not None:
