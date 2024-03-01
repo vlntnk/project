@@ -24,21 +24,6 @@ async def get_cookie_id(request: Request):
     return request.cookies.get(COOKIE_ID)
 
 
-async def get_data_from_cookie(cookie_id: str = Depends(get_cookie_id),
-                       session: AsyncSession = Depends(get_db)):
-    print(cookie_id, 'cookie_id')
-    if cookie_id is not None:
-        # print(cookie_id, "func")
-        dal_object = UserDAL(session)
-        record = await dal_object.get_from_cookie(cookie_id)
-        if record is not None:
-            return Cookie_model(
-                session_id=record.session_id,
-                jwt_token=record.jwt_token
-            )
-    raise HTTPException(status_code=400, detail="error")
-
-
 async def _register_user(body: CreateUser, session) -> Optional[Users]:
     async with session.begin():
         user_dal = UserDAL(session)
@@ -138,8 +123,7 @@ async def _cookie_auth(session, body: AuthUser_Request):
     return cookie
 
 
-async def get_data_from_cookie(cookie_id: str = Depends(get_cookie_id),
-                       session: AsyncSession = Depends(get_db)):
+async def get_data_from_cookie(session: AsyncSession, cookie_id):
     print(cookie_id, 'cookie_id')
     if cookie_id is not None:
         # print(cookie_id, "func")
@@ -234,14 +218,7 @@ async def login_by_cookie(body: AuthUser_Request,
 @login_router.get('/check_cookie')
 async def check_cookie(cookie_id: str = Depends(get_cookie_id),
                        session: AsyncSession = Depends(get_db)):
-    print(cookie_id, 'cookie_id')
-    if cookie_id is not None:
-        # print(cookie_id, "func")
-        dal_object = UserDAL(session)
-        record = await dal_object.get_from_cookie(cookie_id)
-        if record is not None:
-            return Cookie_model(
-                session_id=record.session_id,
-                jwt_token=record.jwt_token
-            )
-    raise HTTPException(status_code=400, detail="error")
+    cookie = await get_data_from_cookie(session, cookie_id)
+    if cookie is None:
+        return HTTPException(status_code=402, detail='unauthorized')
+    return cookie
