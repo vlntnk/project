@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import HTTPException, Depends, Request
-from fastapi.security.http import HTTPAuthorizationCredentials
+from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
@@ -16,6 +16,7 @@ from hashing import Hasher
 from settings import COOKIE_ID #вынести в переменные окружения
 
 
+http_bearer = HTTPBearer()
 
 
 async def get_cookie_id(request: Request):

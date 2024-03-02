@@ -13,21 +13,27 @@ from settings import COOKIE_ID #вынести в переменные окру�
 
 login_router = APIRouter()
 
-http_bearer = HTTPBearer()
-
 
 @login_router.post('/registration', response_model=CreateUser_Response)
-async def register_user(body: CreateUser, db: AsyncSession = Depends(get_db)): # -> Union[HTTPException | CreateUser_Response]:
+async def register_user(body: CreateUser,
+                        db: AsyncSession = Depends(get_db)): # -> Union[HTTPException | CreateUser_Response]:
     user = await _register_user(body, db)
     if user is None:
         raise HTTPException(status_code=409, detail='Invalid credentials')
-    reg_token = await _auth_user(body, db)
-    return CreateUser_Response(
-        name=user.name,
-        surname=user.surname,
-        email=user.email,
-        token=reg_token
+    response = Response()
+    auth_credentials = AuthUser_Request(
+        email=body.email,
+        password=body.password
     )
+    cookie = await _cookie_auth(db, auth_credentials)
+    response.set_cookie(key=COOKIE_ID, value=cookie.session_id)  # httponly=True
+    if cookie:
+        return CreateUser_Response(
+            name=user.name,
+            surname=user.surname,
+            email=user.email,
+            token=cookie.jwt_token
+        )
 
 
 @login_router.post('/auth')
