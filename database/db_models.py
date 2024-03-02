@@ -1,8 +1,6 @@
-from uuid import UUID
-
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, Integer, DECIMAL
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.dialects.postgresql import UUID, DATE
+from sqlalchemy.dialects.postgresql import UUID, DATE, TIME, TEXT, ARRAY
 import uuid
 import datetime
 
@@ -27,4 +25,32 @@ class Cookies(Base):
 
     session_id = Column(String, nullable=False, primary_key=True)
     jwt_token = Column(String, nullable=False)
+
+
+class OneTimeSales(Base):
+    __tablename__ = 'One-time sales'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
+    percentage = Column(Integer, nullable=False)
+    comment = Column(TEXT)
+    start_at = Column(TIME, default=datetime.datetime.utcnow())
+    end_at = Column(TIME, nullable=False)
+    date = Column(DATE, nullable=False)
+    categories = Column(ARRAY(String), nullable=False)
+    creator = Column(String, nullable=False)
+    coordinates = Column(ARRAY(DECIMAL), nullable=False)
+
+
+class RepeatedSales(Base):
+    __tablename__ = 'Repeated sales'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
+    percentage = Column(Integer, nullable=False)
+    comment = Column(TEXT)
+    start_at = Column(TIME, nullable=False)
+    end_at = Column(TIME, nullable=False)
+    weekday = Column(String, nullable=False)
+    categories = Column(ARRAY(String), nullable=False)
+    creator = Column(String, nullable=False)
+    coordinates = Column(ARRAY(DECIMAL), nullable=False)
 
