@@ -6,7 +6,7 @@ from typing import Optional
 from uuid import UUID
 from fastapi import HTTPException
 
-from database.db_models import Users, Cookies
+from database.db_models import Users, Cookies, OneTimeSales, RepeatedSales
 
 
 class UserDAL:
@@ -21,7 +21,7 @@ class UserDAL:
             await self.db_session.flush()
             return user
         except Exception as error:
-            await self.db_session.rollback() #почему-то было закомментрованно
+            await self.db_session.rollback()  # почему-то было закомментрованно
             print(error, 'this is')
             return None
 
@@ -72,7 +72,7 @@ class UserDAL:
         except Exception as e:
             await self.db_session.rollback()
             print(f"{e}")
-            raise Exception #Поменять все ошибки
+            raise Exception  # Поменять все ошибки
 
     async def get_from_cookie(self, got_id: str):
         query = select(Cookies).where(Cookies.session_id == str(got_id))
@@ -85,3 +85,34 @@ class UserDAL:
             print(f"{e}")
             return None
 
+
+class SalesDAL:
+
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def write_one_time_sale(self, sale_data):
+        sale = OneTimeSales(percentage=sale_data.percentage, comment=sale_data.comment,
+                            end_at=sale_data.end_at, date=sale_data.date,
+                            categories=sale_data.categories, creator=sale_data.creator,
+                            coordinates=sale_data.coordinates)
+        try:
+            self.session.add(sale)
+            await self.session.flush()
+            return sale
+        except Exception:
+            await self.session.rollback()
+            raise HTTPException(status_code=500, detail='database error')
+
+    async def write_repeated_sale(self, sale_data):
+        sale = RepeatedSales(percentage=sale_data.percentage, comment=sale_data.comment,
+                             start_at=sale_data.start_at, end_at=sale_data.end_at,
+                             weekday=sale_data.weekday, categories=sale_data.categories,
+                             creator=sale_data.creator, coordinates=sale_data.coordinates)
+        try:
+            self.session.add(sale)
+            await self.session.flush()
+            return sale
+        except Exception:
+            await self.session.rollback()
+            raise HTTPException(status_code=500, detail='database error')

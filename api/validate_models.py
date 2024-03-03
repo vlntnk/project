@@ -1,9 +1,11 @@
 from pydantic import (BaseModel, EmailStr, field_validator,
                       ConfigDict, constr)
 from fastapi import HTTPException
-from typing import Optional
+from typing import Optional, Tuple, List
 import re
 from uuid import UUID
+from datetime import time, date
+from decimal import Decimal
 
 LETTER_MATCH_PATTERN = re.compile(r'^[A-ZА-Я\-]+$', re.IGNORECASE)
 
@@ -92,3 +94,38 @@ class UpdateUser_Request(BaseModel):
 class Cookie_model(BaseModel):
     session_id: UUID
     jwt_token: str
+
+
+# SALES
+class OneTimeSaleRequest(BaseModel):
+    percentage: int
+    comment: Optional[str]
+    end_at: time
+    date: date
+    categories: List[str]
+    creator: EmailStr
+    coordinates: Tuple[Decimal, Decimal]
+
+
+class RepeatedSaleRequest(BaseModel):
+    percentage: int
+    comment: Optional[str]
+    start_at: time
+    end_at: time
+    weekday: str
+    categories: List[str]
+    creator: EmailStr
+    coordinates: Tuple[Decimal, Decimal]
+
+
+class CategoriesRequest(BaseModel):
+    categories: List[str]
+
+
+class ChangeRadiusRequest(BaseModel):
+    radius: int
+
+
+class SaleResponse(BaseModel):
+    id: UUID
+
