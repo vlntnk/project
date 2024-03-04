@@ -23,6 +23,19 @@ async def get_cookie_id(request: Request):
     return request.cookies.get(COOKIE_ID)
 
 
+async def get_data_from_cookie(session: AsyncSession, cookie_id):
+    if cookie_id is not None:
+        # print(cookie_id, "func")
+        dal_object = UserDAL(session)
+        record = await dal_object.get_from_cookie(cookie_id)
+        if record is not None:
+            return Cookie_model(
+                session_id=record.session_id,
+                jwt_token=record.jwt_token
+            )
+    raise HTTPException(status_code=400, detail="error")
+
+
 async def _register_user(body: CreateUser, session) -> Optional[Users]:
     async with session.begin():
         user_dal = UserDAL(session)
@@ -30,7 +43,8 @@ async def _register_user(body: CreateUser, session) -> Optional[Users]:
             name=body.name,
             surname=body.surname,
             email=body.email,
-            password=str(Hasher.get_password_hash(body.password))[2:-1]
+            password=str(Hasher.get_password_hash(body.password))[2:-1],
+            categories=body.categories
         )
         return user
 
@@ -100,7 +114,7 @@ async def _delete_user(session, request_user, cookie_id):
 async def _update_user(session, body: UpdateUser_Request, cookie_id):
     async with session.begin():
         if cookie_id is not None:
-            cookie_data = await get_data_from_cookie(cookie_id, session)
+            cookie_data = await get_data_from_cookie(session, cookie_id)
             user_id = generate_jwt.decode_jwt(cookie_data.jwt_token)['sub']
             user_dal = UserDAL(session)
             try:
@@ -115,23 +129,10 @@ async def _update_user(session, body: UpdateUser_Request, cookie_id):
 async def _cookie_auth(session, body: AuthUser_Request):
     user_token = await _auth_user(body, session)
     session_id = str(uuid.uuid4().hex)
-    print(session_id, "uuid")
     async with session.begin():
         cookie_dal = UserDAL(session)
         cookie = await cookie_dal.add_to_cookie_dal(session_id=session_id, token=user_token)
     return cookie
 
 
-async def get_data_from_cookie(session: AsyncSession, cookie_id):
-    print(cookie_id, 'cookie_id')
-    if cookie_id is not None:
-        # print(cookie_id, "func")
-        dal_object = UserDAL(session)
-        record = await dal_object.get_from_cookie(cookie_id)
-        if record is not None:
-            return Cookie_model(
-                session_id=record.session_id,
-                jwt_token=record.jwt_token
-            )
-    raise HTTPException(status_code=400, detail="error")
 

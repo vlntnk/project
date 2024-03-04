@@ -28,12 +28,14 @@ async def register_user(body: CreateUser,
     cookie = await _cookie_auth(db, auth_credentials)
     response.set_cookie(key=COOKIE_ID, value=cookie.session_id)  # httponly=True
     if cookie:
-        return CreateUser_Response(
-            name=user.name,
-            surname=user.surname,
-            email=user.email,
-            token=cookie.jwt_token
-        )
+        return (
+        #     CreateUser_Response(
+        #     name=user.name,
+        #     surname=user.surname,
+        #     email=user.email,
+        #     token=cookie.jwt_token
+        # ),
+        response)
 
 
 @login_router.post('/auth')
@@ -78,13 +80,13 @@ async def delete_user(user: DeleteUser_Request,
 
 @login_router.put('/update_user')
 async def update_user(credentials: UpdateUser_Request,
-#                       user: ShowUser = Depends(_require_token),
                       session: AsyncSession = Depends(get_db),
                       cookie_id=Depends(get_cookie_id)):
     try:
         updated_user = await _update_user(session, body=credentials,
                                           cookie_id=cookie_id)
     except Exception as e:
+        print(f"{e}")
         return HTTPException(status_code=406, detail=e)
     return updated_user
 

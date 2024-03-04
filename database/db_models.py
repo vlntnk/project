@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DECIMAL
+from sqlalchemy import Column, String, Integer, DECIMAL, Boolean
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.dialects.postgresql import UUID, DATE, TIME, TEXT, ARRAY
 import uuid
@@ -16,6 +16,9 @@ class Users(Base):
     surname = Column(String(256), nullable=False)
     email = Column(String, nullable=False, unique=True)
     hashed_password = Column(String, nullable=False)
+    notifications = Column(Boolean, default=True)
+    categories = Column(ARRAY(String), nullable=False)
+    radius = Column(Integer, default=100)
     created_at = Column(DATE, default=datetime.datetime.utcnow())
     updated_at = Column(DATE, default=datetime.datetime.utcnow())
 

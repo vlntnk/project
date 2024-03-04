@@ -15,6 +15,7 @@ class CreateUser(BaseModel):
     surname: str
     email: EmailStr
     password: str
+    categories: List[str]
 
     @field_validator('name')
     def validate_name(cls, value):
@@ -73,6 +74,7 @@ class UpdateUser_Request(BaseModel):
     name: Optional[constr(min_length=1)]
     surname: Optional[constr(min_length=1)]
     email: EmailStr | None
+    categories: Optional[List[str]]
 
     @field_validator("name")
     def validate_name(cls, value):
