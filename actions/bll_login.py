@@ -26,8 +26,9 @@ async def get_cookie_id(request: Request):
 async def get_data_from_cookie(session: AsyncSession, cookie_id):
     if cookie_id is not None:
         # print(cookie_id, "func")
-        dal_object = UserDAL(session)
-        record = await dal_object.get_from_cookie(cookie_id)
+        async with session.begin():
+            dal_object = UserDAL(session)
+            record = await dal_object.get_from_cookie(cookie_id)
         if record is not None:
             return Cookie_model(
                 session_id=record.session_id,

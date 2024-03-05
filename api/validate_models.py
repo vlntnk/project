@@ -75,6 +75,8 @@ class UpdateUser_Request(BaseModel):
     surname: Optional[constr(min_length=1)]
     email: EmailStr | None
     categories: Optional[List[str]]
+    notifications: Optional[bool]
+    radius: Optional[int]
 
     @field_validator("name")
     def validate_name(cls, value):
