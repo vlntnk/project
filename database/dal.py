@@ -86,9 +86,7 @@ class UserDAL:
     # async def add_categories(self, categories):
         
 
-
 class SalesDAL:
-
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -118,3 +116,17 @@ class SalesDAL:
         except Exception:
             await self.session.rollback()
             raise HTTPException(status_code=500, detail='database error')
+
+    async def read_all_sales(self):
+        try:
+            query_onetime = select(OneTimeSales)
+            # query_repeated = select(RepeatedSales)
+            response = await self.session.execute(query_onetime)
+            await self.session.flush()
+            print(response, 'get all sales dal')
+            return response.scalars().all()
+        except Exception as e:
+            print(f"{e}")
+            raise e
+
+

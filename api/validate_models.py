@@ -1,7 +1,7 @@
 from pydantic import (BaseModel, EmailStr, field_validator,
                       ConfigDict, constr)
 from fastapi import HTTPException
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Union
 import re
 from uuid import UUID
 from datetime import time, date
@@ -133,3 +133,16 @@ class ChangeRadiusRequest(BaseModel):
 class SaleResponse(BaseModel):
     id: UUID
 
+
+class GetSalesResponse(BaseModel):
+
+    id: UUID
+    percentage: int
+    comment: Optional[str]
+    start_at: time
+    end_at: time
+    # weekday: Optional[Union[str, date]]
+    date: Optional[date]
+    categories: List[str]
+    creator: EmailStr
+    coordinates: List[Decimal]
