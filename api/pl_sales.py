@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.session import get_db
-from database.db_models import OneTimeSales
+from database.db_models import OneTimeSales, RepeatedSales
 from api.validate_models import (OneTimeSaleRequest, SaleResponse, RepeatedSaleRequest,
-                                 GetSalesResponse)
+                                 GetOneTime, GetRepeated)
 from actions.bll_sales import (_create_one_time_sale, _create_repeated_sale,
                                _get_all_sales)
 from actions.bll_login import get_cookie_id
@@ -42,7 +42,7 @@ async def get_all_sales(session: AsyncSession = Depends(get_db)):
     print(db_response, 'db response get all sales pl')
     # except Exception as e:
     #     return HTTPException(status_code=500, detail=f'{e}')
-    response = []
+    # response = []
     # for record in db_response:
     #     for row in record:
     #         # Предполагается, что row - это экземпляр модели SQLAlchemy
@@ -52,6 +52,20 @@ async def get_all_sales(session: AsyncSession = Depends(get_db)):
     #         print(model, 'model get all sales pl')
     #         # Добавьте модель в список ответов
     #         response.append(model.dict())
-    response = [GetSalesResponse.model_validate(row, from_attributes=True) for row in db_response]
-    return response
+    try:
+        response = []
+        for index, db_object in enumerate(db_response):
+            for record in db_object:
+                print(type(record))
+                if isinstance(record, OneTimeSales):
+                    print('yes')
+                    response.append(GetOneTime.model_validate(record, from_attributes=True))
+                elif isinstance(record, RepeatedSales):
+                    print('yes')
+                    response.append(GetRepeated.model_validate(record, from_attributes=True))
+        print(response)
+        return response
+    except Exception as e:
+        print(f'{e}')
+        return HTTPException(status_code=500, detail=f'{e}')
 

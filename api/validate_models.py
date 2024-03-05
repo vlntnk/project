@@ -134,7 +134,7 @@ class SaleResponse(BaseModel):
     id: UUID
 
 
-class GetSalesResponse(BaseModel):
+class GetOneTime(BaseModel):
 
     id: UUID
     percentage: int
@@ -142,7 +142,21 @@ class GetSalesResponse(BaseModel):
     start_at: time
     end_at: time
     # weekday: Optional[Union[str, date]]
-    date: Optional[date]
+    date: date
+    categories: List[str]
+    creator: EmailStr
+    coordinates: List[Decimal]
+
+
+class GetRepeated(BaseModel):
+
+    id: UUID
+    percentage: int
+    comment: Optional[str]
+    start_at: time
+    end_at: time
+    weekday: str
+    # date: Optional[date]
     categories: List[str]
     creator: EmailStr
     coordinates: List[Decimal]

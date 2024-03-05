@@ -120,11 +120,12 @@ class SalesDAL:
     async def read_all_sales(self):
         try:
             query_onetime = select(OneTimeSales)
-            # query_repeated = select(RepeatedSales)
-            response = await self.session.execute(query_onetime)
+            query_repeated = select(RepeatedSales)
+            unproc_response = [ await self.session.execute(query) for query in (query_repeated, query_onetime)]
+            response = list(map(lambda record: record.scalars().all(), unproc_response))
             await self.session.flush()
             print(response, 'get all sales dal')
-            return response.scalars().all()
+            return response
         except Exception as e:
             print(f"{e}")
             raise e
