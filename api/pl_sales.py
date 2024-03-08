@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.session import get_db
 from database.db_models import OneTimeSales, RepeatedSales
-from api.validate_models import (OneTimeSaleRequest, SaleResponse, RepeatedSaleRequest,
+from api.validate_models import (OneTimeSaleRequest, SaleResponse, RepeatedSaleRequest, GetSales,
                                  GetOneTime, GetRepeated)
 from actions.bll_sales import (_create_one_time_sale, _create_repeated_sale,
                                _get_all_sales)
@@ -59,13 +59,16 @@ async def get_all_sales(session: AsyncSession = Depends(get_db)):
                 print(type(record))
                 if isinstance(record, OneTimeSales):
                     print('yes')
-                    response.append(GetOneTime.model_validate(record, from_attributes=True))
+                    response.append(GetSales.model_validate(record, from_attributes=True))
                 elif isinstance(record, RepeatedSales):
                     print('yes')
-                    response.append(GetRepeated.model_validate(record, from_attributes=True))
+                    response.append(GetSales.model_validate(record, from_attributes=True))
         print(response)
         return response
     except Exception as e:
         print(f'{e}')
         return HTTPException(status_code=500, detail=f'{e}')
+
+    #БЛЯЯЯЯ ДАУН, МНЕ НЕ НАДО ФУЛЛ ИНФУ ВЫТАСКИВАТЬ ТОК АЙДИ, КООРДЫ И ПРОЦЕНТ
+    #Я сделал но заппрос из базы данных кривой
 

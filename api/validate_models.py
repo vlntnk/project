@@ -160,3 +160,9 @@ class GetRepeated(BaseModel):
     categories: List[str]
     creator: EmailStr
     coordinates: List[Decimal]
+
+
+class GetSales(BaseModel):
+    id: UUID
+    percentage: int
+    coordinates: Tuple[Decimal, Decimal]

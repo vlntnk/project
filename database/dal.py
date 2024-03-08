@@ -121,7 +121,7 @@ class SalesDAL:
         try:
             query_onetime = select(OneTimeSales)
             query_repeated = select(RepeatedSales)
-            unproc_response = [ await self.session.execute(query) for query in (query_repeated, query_onetime)]
+            unproc_response = [await self.session.execute(query) for query in (query_repeated, query_onetime)]
             response = list(map(lambda record: record.scalars().all(), unproc_response))
             await self.session.flush()
             print(response, 'get all sales dal')
