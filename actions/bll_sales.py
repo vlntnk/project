@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from functools import reduce
 
 from database.dal import SalesDAL
 from actions.bll_login import get_data_from_cookie
@@ -54,8 +55,7 @@ async def _get_sales_by_email(session, cookie_id):
             raise e
         else:
             response = []
-            for index, lst in enumerate(sales):
-                for sale in lst:
-                    response.append(GetSales.model_validate(sale[0], from_attributes=True))
+            for index, sale in enumerate(sales):
+                response.append(GetSales.model_validate(sale, from_attributes=True))
             print(response, 'response bll')
             return response

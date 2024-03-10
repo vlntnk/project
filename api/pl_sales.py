@@ -87,10 +87,10 @@ async def get_certain_sale(sale_id: UUID, session: AsyncSession = Depends(get_db
 
 @sales_router.get('/my_sales')
 async def get_sales_by_email(cookie_id=Depends(get_cookie_id), session: AsyncSession = Depends(get_db)):
-    try:
+    # try:
         response = await _get_sales_by_email(session, cookie_id)
-    except Exception as e:
-        return e
-    else:
+    # except Exception as e:
+    #     return e
+    # else:
         return {'sales': response}
 

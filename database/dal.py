@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from datetime import datetime
 from pydantic import EmailStr
+from functools import reduce
 
 from database.db_models import Users, Cookies, OneTimeSales, RepeatedSales
 
@@ -84,7 +85,7 @@ class UserDAL:
             return None
 
     # async def add_categories(self, categories):
-        
+
 
 class SalesDAL:
 
@@ -160,7 +161,9 @@ class SalesDAL:
             await self.session.flush()
             print(unproc_sales)
             sales = list(map(lambda record: record.fetchall(), unproc_sales))
+            reduced_sales = reduce(lambda lstn, record: lstn + [r[0] for r in record], sales, [])
+            print(reduced_sales, 'reduced_sales')
             print(sales, 'sales dal')
-            return sales
+            return reduced_sales
         except Exception as e:
             raise e
