@@ -102,7 +102,7 @@ async def login_by_cookie(body: AuthUser_Request,
     return {"error": "error"}
 
 
-@login_router.get('/check_cookie')
+@login_router.get('/check_cookie', response_description='get info from cookie')
 async def check_cookie(cookie_id: str = Depends(get_cookie_id),
                        session: AsyncSession = Depends(get_db)):
     cookie = await get_data_from_cookie(session, cookie_id)

@@ -1,10 +1,9 @@
-import uuid
-
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, delete, update, and_
 from typing import Optional, List
 from uuid import UUID
 from fastapi import HTTPException
+from datetime import date, datetime, time
 
 from database.db_models import Users, Cookies, OneTimeSales, RepeatedSales
 
@@ -118,11 +117,21 @@ class SalesDAL:
             raise HTTPException(status_code=500, detail='database error')
 
     async def read_all_sales(self):
+        weekday_index = datetime.utcnow().weekday()
+        week = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
+        weekday = week[weekday_index]
+        current_time = datetime.utcnow().time()
         try:
-            query_onetime = select(OneTimeSales)
-            query_repeated = select(RepeatedSales)
+            query_onetime = (select(OneTimeSales.id, OneTimeSales.percentage, OneTimeSales.coordinates)
+                             .where(and_(OneTimeSales.date == datetime.utcnow().date(),
+                                         OneTimeSales.end_at > datetime.utcnow().time())))
+            query_repeated = (select(RepeatedSales.id, RepeatedSales.percentage, RepeatedSales.coordinates)
+                              .where(and_(RepeatedSales.weekday == weekday,
+                                          RepeatedSales.start_at < current_time,
+                                          RepeatedSales.end_at > current_time)))
+            print(datetime.utcnow().weekday())
             unproc_response = [await self.session.execute(query) for query in (query_repeated, query_onetime)]
-            response = list(map(lambda record: record.scalars().all(), unproc_response))
+            response = (map(lambda record: record.fetchall(), unproc_response))
             await self.session.flush()
             print(response, 'get all sales dal')
             return response
@@ -130,4 +139,15 @@ class SalesDAL:
             print(f"{e}")
             raise e
 
-
+    async def get_certain_sale_dal(self, sale_id: UUID):
+        one_time_query = select(OneTimeSales).where(OneTimeSales.id == sale_id)
+        repeated_query = select(RepeatedSales).where(RepeatedSales.id == sale_id)
+        try:
+            sale = await self.session.execute(one_time_query)
+            if sale.fetchone() is None:
+                sale = await self.session.execute(repeated_query)
+            await self.session.flush()
+            print(sale)
+            return sale.fetchone()[0]
+        except Exception as e:
+            raise e

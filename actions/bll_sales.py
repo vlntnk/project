@@ -33,3 +33,10 @@ async def _get_all_sales(session):
         if result is None:
             raise HTTPException(status_code=500, detail='database error')
         return result
+
+
+async def _get_certain_sale(session, sale_id):
+    async with session.begin():
+        dal_object = SalesDAL(session)
+        sale = await dal_object.get_certain_sale_dal(sale_id)
+        return sale

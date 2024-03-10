@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 
 from database.session import get_db
 from database.db_models import OneTimeSales, RepeatedSales
 from api.validate_models import (OneTimeSaleRequest, SaleResponse, RepeatedSaleRequest, GetSales,
                                  GetOneTime, GetRepeated)
 from actions.bll_sales import (_create_one_time_sale, _create_repeated_sale,
-                               _get_all_sales)
+                               _get_all_sales, _get_certain_sale)
 from actions.bll_login import get_cookie_id
 
 sales_router = APIRouter()
@@ -57,18 +58,28 @@ async def get_all_sales(session: AsyncSession = Depends(get_db)):
         for index, db_object in enumerate(db_response):
             for record in db_object:
                 print(type(record))
-                if isinstance(record, OneTimeSales):
-                    print('yes')
-                    response.append(GetSales.model_validate(record, from_attributes=True))
-                elif isinstance(record, RepeatedSales):
-                    print('yes')
-                    response.append(GetSales.model_validate(record, from_attributes=True))
+                # if isinstance(record, OneTimeSales):
+                #     print('yes')
+                response.append(GetSales.model_validate(record, from_attributes=True))
+                # elif isinstance(record, RepeatedSales):
+                #     print('yes')
+                #     response.append(GetSales.model_validate(record, from_attributes=True))
         print(response)
         return response
     except Exception as e:
         print(f'{e}')
         return HTTPException(status_code=500, detail=f'{e}')
 
-    #БЛЯЯЯЯ ДАУН, МНЕ НЕ НАДО ФУЛЛ ИНФУ ВЫТАСКИВАТЬ ТОК АЙДИ, КООРДЫ И ПРОЦЕНТ
-    #Я сделал но заппрос из базы данных кривой
+@sales_router.get('/get_sale/{sale_id}')
+async def get_certain_sale(sale_id: UUID, session: AsyncSession = Depends(get_db)):
+    sale = await _get_certain_sale(session, sale_id)
+    print(type(sale))
+    print(sale)
+    if isinstance(sale, OneTimeSales):
+        return GetOneTime.model_validate(sale, from_attributes=True)
+    elif isinstance(sale, RepeatedSales):
+        return GetRepeated.model_validate(sale, from_attributes=True)
+    else:
+        return Response('no such sale', media_type='application/json')
+
 
