@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
+from pydantic import EmailStr
 
 from database.session import get_db
 from database.db_models import OneTimeSales, RepeatedSales
 from api.validate_models import (OneTimeSaleRequest, SaleResponse, RepeatedSaleRequest, GetSales,
                                  GetOneTime, GetRepeated)
 from actions.bll_sales import (_create_one_time_sale, _create_repeated_sale,
-                               _get_all_sales, _get_certain_sale)
+                               _get_all_sales, _get_certain_sale, _get_sales_by_email)
 from actions.bll_login import get_cookie_id
 
 sales_router = APIRouter()
@@ -70,6 +71,7 @@ async def get_all_sales(session: AsyncSession = Depends(get_db)):
         print(f'{e}')
         return HTTPException(status_code=500, detail=f'{e}')
 
+
 @sales_router.get('/get_sale/{sale_id}')
 async def get_certain_sale(sale_id: UUID, session: AsyncSession = Depends(get_db)):
     sale = await _get_certain_sale(session, sale_id)
@@ -82,4 +84,13 @@ async def get_certain_sale(sale_id: UUID, session: AsyncSession = Depends(get_db
     else:
         return Response('no such sale', media_type='application/json')
 
+
+@sales_router.get('/my_sales')
+async def get_sales_by_email(cookie_id=Depends(get_cookie_id), session: AsyncSession = Depends(get_db)):
+    try:
+        response = await _get_sales_by_email(session, cookie_id)
+    except Exception as e:
+        return e
+    else:
+        return {'sales': response}
 

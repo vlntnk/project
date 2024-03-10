@@ -3,7 +3,8 @@ from sqlalchemy import select, delete, update, and_
 from typing import Optional, List
 from uuid import UUID
 from fastapi import HTTPException
-from datetime import date, datetime, time
+from datetime import datetime
+from pydantic import EmailStr
 
 from database.db_models import Users, Cookies, OneTimeSales, RepeatedSales
 
@@ -129,9 +130,8 @@ class SalesDAL:
                               .where(and_(RepeatedSales.weekday == weekday,
                                           RepeatedSales.start_at < current_time,
                                           RepeatedSales.end_at > current_time)))
-            print(datetime.utcnow().weekday())
             unproc_response = [await self.session.execute(query) for query in (query_repeated, query_onetime)]
-            response = (map(lambda record: record.fetchall(), unproc_response))
+            response = list(map(lambda record: record.fetchall(), unproc_response)) #я добавил лист вдруг поломается???
             await self.session.flush()
             print(response, 'get all sales dal')
             return response
@@ -149,5 +149,18 @@ class SalesDAL:
             await self.session.flush()
             print(sale)
             return sale.fetchone()[0]
+        except Exception as e:
+            raise e
+
+    async def get_sales_by_email(self, email: EmailStr):
+        one_time_query = select(OneTimeSales).where(OneTimeSales.creator == email)
+        repeated_query = select(RepeatedSales).where(OneTimeSales.creator == email)
+        try:
+            unproc_sales = [await self.session.execute(query) for query in (one_time_query, repeated_query)]
+            await self.session.flush()
+            print(unproc_sales)
+            sales = list(map(lambda record: record.fetchall(), unproc_sales))
+            print(sales, 'sales dal')
+            return sales
         except Exception as e:
             raise e
