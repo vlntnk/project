@@ -59,3 +59,14 @@ async def _get_sales_by_email(session, cookie_id):
                 response.append(GetSales.model_validate(sale, from_attributes=True))
             print(response, 'response bll')
             return response
+
+async def _get_sales_by_categories(session, cookie_id):
+    data = await get_data_from_cookie(session, cookie_id)
+    user_id = decode_jwt(data.jwt_token)['sub']
+    async with session.begin():
+        dal_object = SalesDAL(session)
+        sales = await dal_object.get_sales_by_categories(user_id)
+        response = []
+        for sale in sales:
+            response.append(GetSales.model_validate(sale, from_attributes=True))
+        return response

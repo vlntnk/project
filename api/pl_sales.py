@@ -8,7 +8,8 @@ from database.db_models import OneTimeSales, RepeatedSales
 from api.validate_models import (OneTimeSaleRequest, SaleResponse, RepeatedSaleRequest, GetSales,
                                  GetOneTime, GetRepeated)
 from actions.bll_sales import (_create_one_time_sale, _create_repeated_sale,
-                               _get_all_sales, _get_certain_sale, _get_sales_by_email)
+                               _get_all_sales, _get_certain_sale, _get_sales_by_email,
+                               _get_sales_by_categories)
 from actions.bll_login import get_cookie_id
 
 sales_router = APIRouter()
@@ -94,3 +95,7 @@ async def get_sales_by_email(cookie_id=Depends(get_cookie_id), session: AsyncSes
     # else:
         return {'sales': response}
 
+@sales_router.get('/favourite')
+async def get_favourite(cookie_id = Depends(get_cookie_id), session: AsyncSession = Depends(get_db)):
+    sales = await _get_sales_by_categories(session, cookie_id)
+    return {'sales': sales}

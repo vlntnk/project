@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, update, and_
+from sqlalchemy import select, delete, update, and_, any_
 from typing import Optional, List
 from uuid import UUID
 from fastapi import HTTPException
@@ -167,3 +167,15 @@ class SalesDAL:
             return reduced_sales
         except Exception as e:
             raise e
+
+    async def get_sales_by_categories(self, user_id: UUID):
+        query = select(Users).where(Users.user_id == user_id)
+        unproc_user = await self.session.execute(query)
+        user = unproc_user.fetchone()[0]
+        query_one_time = select(OneTimeSales).where(OneTimeSales.categories.overlap(user.categories))
+        query_repeated = select(RepeatedSales).where(RepeatedSales.categories.overlap(user.categories))
+        unproc_sales = [await self.session.execute(query) for query in (query_repeated, query_one_time)]
+        await self.session.flush()
+        sales = list(map(lambda record: record.fetchall(), unproc_sales))
+        reduced_sales = reduce(lambda lstn, record: lstn + [r[0] for r in record], sales, [])
+        return reduced_sales
