@@ -11,7 +11,7 @@ Base = declarative_base()
 class Users(Base):
     __tablename__ = 'Users table'
 
-    user_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
+    user_id = Column(UUID(as_uuid=True), primary_key=True)
     name = Column(String(128), nullable=False)
     surname = Column(String(256), nullable=False)
     email = Column(String, nullable=False, unique=True)

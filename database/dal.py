@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, update, and_, any_
 from typing import Optional, List
-from uuid import UUID
+from uuid import UUID, uuid4
 from fastapi import HTTPException
 from datetime import datetime
 from pydantic import EmailStr
@@ -17,22 +17,29 @@ class UserDAL:
     async def create_user_dal(self, name: str, surname: str, email: str, password: str,
                               categories: List[str]) \
             -> Optional[Users]:
-        user = Users(name=name, surname=surname, email=email, hashed_password=password,
+        user_id = uuid4()
+        user = Users(user_id=user_id, name=name, surname=surname, email=email, hashed_password=password,
                      categories=categories)
         try:
             self.db_session.add(user)
             await self.db_session.flush()
             return user
         except Exception as error:
+            print(f"{error}")
             await self.db_session.rollback()  # почему-то было закомментрованно
             return None
 
     async def get_user_by_email_dal(self, email: str) -> Optional[Users]:
+        print('get email from db')
+        print(email, 'get email')
         query = select(Users).where(Users.email == email)
         try:
             db_response = await self.db_session.execute(query)
-            return db_response.fetchone()[0]
-        except Exception:
+            user = db_response.fetchone()[0]
+            print(user, 'db_response')
+            return user
+        except Exception as e:
+            print(f'{e}', 'get by email')
             return None
 
     async def delete_user_dal(self, user_id: UUID) -> Optional[bool]:
@@ -94,20 +101,21 @@ class SalesDAL:
 
     async def write_one_time_sale(self, sale_data):
         sale = OneTimeSales(percentage=sale_data.percentage, comment=sale_data.comment,
-                            end_at=sale_data.end_at, date=sale_data.date,
+                            end_at=sale_data.end_at.time(), date=sale_data.date,
                             categories=sale_data.categories, creator=sale_data.creator,
                             coordinates=sale_data.coordinates)
         try:
             self.session.add(sale)
             await self.session.flush()
             return sale
-        except Exception:
+        except Exception as e:
+            print(f"{e}")
             await self.session.rollback()
             raise HTTPException(status_code=500, detail='database error')
 
     async def write_repeated_sale(self, sale_data):
         sale = RepeatedSales(percentage=sale_data.percentage, comment=sale_data.comment,
-                             start_at=sale_data.start_at, end_at=sale_data.end_at,
+                             start_at=sale_data.start_at.time(), end_at=sale_data.end_at.time(),
                              weekday=sale_data.weekday, categories=sale_data.categories,
                              creator=sale_data.creator, coordinates=sale_data.coordinates)
         try:
@@ -120,7 +128,7 @@ class SalesDAL:
 
     async def read_all_sales(self):
         weekday_index = datetime.utcnow().weekday()
-        week = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
+        week = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
         weekday = week[weekday_index]
         current_time = datetime.utcnow().time()
         try:

@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from typing import Optional, Tuple, List, Union
 import re
 from uuid import UUID
-from datetime import time, date
+from datetime import time, date, datetime
 from decimal import Decimal
 
 LETTER_MATCH_PATTERN = re.compile(r'^[A-ZА-Я\-]+$', re.IGNORECASE)
@@ -104,21 +104,21 @@ class Cookie_model(BaseModel):
 class OneTimeSaleRequest(BaseModel):
     percentage: int
     comment: Optional[str]
-    end_at: time
+    end_at: datetime
     date: date
     categories: List[str]
-    creator: EmailStr
+    creator: Optional[EmailStr]
     coordinates: Tuple[Decimal, Decimal]
 
 
 class RepeatedSaleRequest(BaseModel):
     percentage: int
     comment: Optional[str]
-    start_at: time
-    end_at: time
+    start_at: datetime
+    end_at: datetime
     weekday: str
     categories: List[str]
-    creator: EmailStr
+    creator: Optional[EmailStr]
     coordinates: Tuple[Decimal, Decimal]
 
 

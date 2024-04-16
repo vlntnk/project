@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi.responses import RedirectResponse
 from fastapi.security.http import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -94,10 +95,14 @@ async def update_user(credentials: UpdateUser_Request,
 @login_router.post('/login_by_cookie')
 async def login_by_cookie(body: AuthUser_Request,
                           session: AsyncSession = Depends(get_db)):
-    response = Response()
+    response = RedirectResponse('http://localhost:5000/home')
     cookie = await _cookie_auth(session, body)
+    # response.headers['Access-Control-Allow-Credentials'] = cookie.session_id
+    response.headers['Location'] = '/home'
+    response.status_code = 302
     response.set_cookie(key=COOKIE_ID, value=cookie.session_id)#httponly=True
     if cookie:
+        print(response.body, response.raw_headers, 'cookie auth')
         return response
     return {"error": "error"}
 
