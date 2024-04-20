@@ -49,7 +49,6 @@ class CreateUser_Response(TunedModel):
 
 class AuthUser_Request(BaseModel):
     model_config = ConfigDict(strict=True)
-
     email: EmailStr
     password: str
 
@@ -78,21 +77,6 @@ class UpdateUser_Request(BaseModel):
     notifications: Optional[bool]
     radius: Optional[int]
 
-    @field_validator("name")
-    def validate_name(cls, value):
-        if not LETTER_MATCH_PATTERN.match(value):
-            raise HTTPException(
-                status_code=422, detail="Name should contains only letters"
-            )
-        return value
-
-    @field_validator("surname")
-    def validate_surname(cls, value):
-        if not LETTER_MATCH_PATTERN.match(value):
-            raise HTTPException(
-                status_code=422, detail="Surname should contains only letters"
-            )
-        return value
 
 
 class Cookie_model(BaseModel):

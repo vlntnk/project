@@ -65,10 +65,13 @@ class UserDAL:
         try:
             res = await self.db_session.execute(query)
             await self.db_session.flush()
+            await self.db_session.commit()
         except Exception as e:
-            print(f"{e}")
+            await self.db_session.rollback()
+            print(f"{e}, dal update user")
             raise HTTPException(status_code=406, detail=e)
         update_user_id_row = res.fetchone()
+        print(update_user_id_row[0], 'dal update user')
         if update_user_id_row is not None:
             return update_user_id_row[0]
 
@@ -86,8 +89,11 @@ class UserDAL:
         query = select(Cookies).where(Cookies.session_id == got_id)
         try:
             cookie_record = await self.db_session.execute(query)
+            await self.db_session.flush()
+            await self.db_session.commit()
             return cookie_record.fetchone()[0]
         except Exception as e:
+            await self.db_session.rollback()
             print(f"{e}")
             return None
 

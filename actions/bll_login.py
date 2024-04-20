@@ -24,17 +24,16 @@ async def get_cookie_id(request: Request):
 
 
 async def get_data_from_cookie(session: AsyncSession, cookie_id):
-    if cookie_id is not None:
-        # print(cookie_id, "func")
-        async with session.begin():
+    async with session.begin():
+        if cookie_id is not None:
             dal_object = UserDAL(session)
             record = await dal_object.get_from_cookie(cookie_id)
-        if record is not None:
-            return Cookie_model(
-                session_id=record.session_id,
-                jwt_token=record.jwt_token
-            )
-    raise HTTPException(status_code=400, detail="error")
+            if record is not None:
+                return Cookie_model(
+                    session_id=record.session_id,
+                    jwt_token=record.jwt_token
+                )
+        raise HTTPException(status_code=400, detail="error")
 
 
 async def _register_user(body: CreateUser, session) -> Optional[Users]:
@@ -68,7 +67,9 @@ async def _auth_user(body: AuthUser_Request, session): #Подумать над 
                 'sub': str(user.user_id),
                 'name': user.name,
                 'surname': user.surname,
-                'email': user.email
+                'email': user.email,
+                'categories': user.categories,
+                'radius': user.radius,
             }
             access_token = generate_jwt.encode_jwt(payload)
             return str(access_token)
@@ -113,16 +114,18 @@ async def _delete_user(session, request_user, cookie_id):
 
 
 async def _update_user(session, body: UpdateUser_Request, cookie_id):
+    cookie_data = await get_data_from_cookie(session, cookie_id)
     async with session.begin():
         if cookie_id is not None:
-            cookie_data = await get_data_from_cookie(session, cookie_id)
             user_id = generate_jwt.decode_jwt(cookie_data.jwt_token)['sub']
             user_dal = UserDAL(session)
             try:
                 updated_user = await user_dal.update_user_dal(user_id=user_id,
                                                             **body.dict(exclude_none=True))
             except Exception as e:
+                print(f'{e}, bll update user')
                 raise HTTPException(status_code=406, detail=e)
+            print(updated_user, 'upadated user')
             if updated_user is not None:
                 return updated_user
 

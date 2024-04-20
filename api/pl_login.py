@@ -1,8 +1,8 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
-from fastapi.responses import RedirectResponse
-from fastapi.security.http import HTTPBearer
+from fastapi import APIRouter, HTTPException, Depends, Response, status
+from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from json import dumps
+import jwt_token.generate_jwt
 from api.validate_models import (CreateUser, CreateUser_Response,
                                  AuthUser_Request, Token, ShowUser, DeleteUser_Request,
                                  UpdateUser_Request)
@@ -87,7 +87,7 @@ async def update_user(credentials: UpdateUser_Request,
         updated_user = await _update_user(session, body=credentials,
                                           cookie_id=cookie_id)
     except Exception as e:
-        print(f"{e}")
+        print(f"{e},. pll update user")
         return HTTPException(status_code=406, detail=e)
     return updated_user
 
@@ -95,11 +95,10 @@ async def update_user(credentials: UpdateUser_Request,
 @login_router.post('/login_by_cookie')
 async def login_by_cookie(body: AuthUser_Request,
                           session: AsyncSession = Depends(get_db)):
-    response = RedirectResponse('http://localhost:5000/home')
+    response = Response()
     cookie = await _cookie_auth(session, body)
     # response.headers['Access-Control-Allow-Credentials'] = cookie.session_id
-    response.headers['Location'] = '/home'
-    response.status_code = 302
+    response.status_code = 200
     response.set_cookie(key=COOKIE_ID, value=cookie.session_id)#httponly=True
     if cookie:
         print(response.body, response.raw_headers, 'cookie auth')
@@ -107,10 +106,18 @@ async def login_by_cookie(body: AuthUser_Request,
     return {"error": "error"}
 
 
-@login_router.get('/check_cookie', response_description='get info from cookie')
+@login_router.get('/redirect_home')
+async def redirect_to_home():
+    response = RedirectResponse(url="http://localhost:5000/home")
+    response.status_code = 302
+    return response
+
+
+@login_router.get('/check_cookie')
 async def check_cookie(cookie_id: str = Depends(get_cookie_id),
                        session: AsyncSession = Depends(get_db)):
     cookie = await get_data_from_cookie(session, cookie_id)
     if cookie is None:
-        return HTTPException(status_code=402, detail='unauthorized')
-    return cookie
+        return HTTPException(status_code=401, detail='unauthorized')
+    data = jwt_token.generate_jwt.decode_jwt(cookie.jwt_token)
+    return JSONResponse(content=data)
