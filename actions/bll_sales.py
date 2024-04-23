@@ -44,6 +44,13 @@ async def _get_certain_sale(session, sale_id):
         return sale
 
 
+async def _read_parse(session):
+    async with session.begin():
+        dal_object = SalesDAL(session)
+        sale = await dal_object.get_with_parse_dal()
+        return sale
+
+
 async def _get_sales_by_email(session, cookie_id):
     cookie_data = await get_data_from_cookie(session, cookie_id)
     email = decode_jwt(cookie_data.jwt_token)['email']
@@ -59,6 +66,7 @@ async def _get_sales_by_email(session, cookie_id):
                 response.append(GetSales.model_validate(sale, from_attributes=True))
             print(response, 'response bll')
             return response
+
 
 async def _get_sales_by_categories(session, cookie_id):
     data = await get_data_from_cookie(session, cookie_id)

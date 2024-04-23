@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DECIMAL, Boolean
+from sqlalchemy import Column, String, Integer, DECIMAL, Boolean, Float
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.dialects.postgresql import UUID, DATE, TIME, TEXT, ARRAY
 import uuid
@@ -56,4 +56,17 @@ class RepeatedSales(Base):
     categories = Column(ARRAY(String), nullable=False)
     creator = Column(String, nullable=False)
     coordinates = Column(ARRAY(DECIMAL), nullable=False)
+    
+    
+class ParseSales(Base):
+    __tablename__ = 'Parse sales'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
+    name = Column(String, nullable=False)
+    Href = Column(String, nullable=False)
+    categories = Column(ARRAY(String), nullable=False)
+    Koords = Column(ARRAY(DECIMAL), nullable=False)
+    Zagolovok = Column(TEXT)
+    Pod_zagolovok = Column(TEXT)
+
 

@@ -78,7 +78,6 @@ class UpdateUser_Request(BaseModel):
     radius: Optional[int]
 
 
-
 class Cookie_model(BaseModel):
     session_id: UUID
     jwt_token: str
@@ -119,7 +118,6 @@ class SaleResponse(BaseModel):
 
 
 class GetOneTime(BaseModel):
-
     id: UUID
     percentage: int
     comment: Optional[str]
@@ -133,7 +131,6 @@ class GetOneTime(BaseModel):
 
 
 class GetRepeated(BaseModel):
-
     id: UUID
     percentage: int
     comment: Optional[str]
@@ -147,6 +144,23 @@ class GetRepeated(BaseModel):
 
 
 class GetSales(BaseModel):
-    id: UUID
     percentage: int
     coordinates: Tuple[Decimal, Decimal]
+
+
+class ParseSale(BaseModel):
+    name: str
+    Href: str
+    categories: List
+    Koords: List
+    Zagolovok: str
+    Pod_zagolovok: str
+
+
+class ParseSale_Response(BaseModel):
+    name: str
+    Href: str
+    categories: List
+    Koords: List
+    Zagolovok: str
+    Pod_zagolovok: str

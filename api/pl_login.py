@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends, Response, status
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from json import dumps
+from Maps.parse import write_to_database
 import jwt_token.generate_jwt
 from api.validate_models import (CreateUser, CreateUser_Response,
                                  AuthUser_Request, Token, ShowUser, DeleteUser_Request,
-                                 UpdateUser_Request)
+                                 UpdateUser_Request, ParseSale)
 from database.session import get_db
 from actions.bll_login import (_require_token, _register_user, _auth_user,
                                _update_user, _delete_user, _cookie_auth, get_cookie_id,
@@ -121,3 +121,9 @@ async def check_cookie(cookie_id: str = Depends(get_cookie_id),
         return HTTPException(status_code=401, detail='unauthorized')
     data = jwt_token.generate_jwt.decode_jwt(cookie.jwt_token)
     return JSONResponse(content=data)
+
+
+@login_router.post('/write_parse')
+async def write(data: ParseSale, session: AsyncSession = Depends(get_db)):
+    await write_to_database(data, session)
+    return {"ok": 'ok'}

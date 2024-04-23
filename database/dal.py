@@ -7,7 +7,7 @@ from datetime import datetime
 from pydantic import EmailStr
 from functools import reduce
 
-from database.db_models import Users, Cookies, OneTimeSales, RepeatedSales
+from database.db_models import Users, Cookies, OneTimeSales, RepeatedSales, ParseSales
 
 
 class UserDAL:
@@ -193,3 +193,36 @@ class SalesDAL:
         sales = list(map(lambda record: record.fetchall(), unproc_sales))
         reduced_sales = reduce(lambda lstn, record: lstn + [r[0] for r in record], sales, [])
         return reduced_sales
+
+    async def write_parse(self, data):
+        sale_id = uuid4()
+        sale = ParseSales(id=sale_id, name=data.name, Href=data.Href, categories=data.categories,
+                          Koords=data.Koords, Zagolovok=data.Zagolovok,
+                          Pod_zagolovok=data.Pod_zagolovok)
+        try:
+            self.session.add(sale)
+            await self.session.flush()
+        except Exception as e:
+            print(f'{e}')
+            await self.session.rollback()
+
+    async def get_with_parse_dal(self):
+        query = select(ParseSales)
+        try:
+            sale = await self.session.execute(query)
+            await self.session.flush()
+            print(sale)
+            response = [row for row in sale.fetchall()]
+            return response
+        except Exception as e:
+            await self.session.rollback()
+            raise e
+
+    async def get_coords(self):
+        query = select(OneTimeSales.coordinates)
+        query2 = select(RepeatedSales.coordinates)
+        unproc_coords = [await self.session.execute(q) for q in (query, query2)]
+        await self.session.flush()
+        coords = list(map(lambda record: record.fetchall(), unproc_coords))
+        reduced = reduce(lambda lstn, record: lstn + [r[0] for r in record], coords, [])
+        return reduced
